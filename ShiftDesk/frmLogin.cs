@@ -10,8 +10,8 @@ namespace ShiftDesk
     ///
     /// There is no data access code here. The username and password are handed
     /// to Data.UserStore, which owns the connection string and the SQL. The
-    /// Microsoft Access / System.Data.OleDb code this project started with has
-    /// been removed from the solution entirely.
+    /// Microsoft Access data access this project started with is gone from the
+    /// solution completely - see the README for what replaced it.
     /// </summary>
     public partial class frmLogin : Form
     {
