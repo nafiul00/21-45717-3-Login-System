@@ -1,0 +1,18 @@
+# Compiler output. Never goes in the repository - it is rebuilt from source.
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio per-user state
+.vs/
+*.user
+*.suo
+*.userprefs
+
+# ReSharper / Rider
+_ReSharper*/
+.idea/
+
+# Operating system junk
+.DS_Store
+Thumbs.db
+desktop.ini
