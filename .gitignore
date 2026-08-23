@@ -16,3 +16,7 @@ _ReSharper*/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+## .NET SDK build output (the macOS build)
+[Bb]in/
+[Oo]bj/

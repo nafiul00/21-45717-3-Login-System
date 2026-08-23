@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <RootNamespace>ShiftDesk.Mac</RootNamespace>
+    <AssemblyName>ShiftDesk.Mac</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <!--
+    The data layer is NOT copied here. These two files are the same files the
+    Windows Forms project compiles, linked in from ../ShiftDesk. There is one
+    UserStore and one PasswordHasher in this repository, and both front ends
+    compile the identical source. Fix a query once and both applications get it.
+  -->
+  <ItemGroup>
+    <Compile Include="../ShiftDesk/Data/UserStore.cs" Link="Data/UserStore.cs" />
+    <Compile Include="../ShiftDesk/Security/PasswordHasher.cs" Link="Security/PasswordHasher.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

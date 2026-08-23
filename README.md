@@ -11,6 +11,25 @@ The lab started from a version of this program that kept its users in a
 Microsoft Access `.mdb` file through `System.Data.OleDb`. Moving it onto SQL
 Server was the task. None of the Access code survives.
 
+There are **two front ends in this repository** and they share one data layer:
+
+| Build | Runs on | Project |
+| --- | --- | --- |
+| Windows Forms, .NET Framework 4.7.2 | Windows + Visual Studio | `ShiftDesk/` |
+| Avalonia, .NET 10 | macOS (and Linux/Windows) | `ShiftDesk.Mac/` |
+
+I do not own a Windows machine, so I wrote the macOS build in order to run and
+test the application at all. It is not a rewrite: `Data/UserStore.cs` and
+`Security/PasswordHasher.cs` are **the same two files**, linked into the macOS
+project rather than copied, so both builds compile identical data-access code.
+The screenshots below are from the macOS build.
+
+![Sign in](docs/login.png)
+
+| Create an account | Signed in |
+| --- | --- |
+| ![Register](docs/register.png) | ![Dashboard](docs/dashboard.png) |
+
 ---
 
 ## What the application does
@@ -65,6 +84,28 @@ username: admin
 password: admin123
 ```
 
+### Running the macOS build instead
+
+macOS has no LocalDB and no Windows account to authenticate with, so SQL Server
+runs in Docker and the connection string uses a username and password rather
+than `Integrated Security`:
+
+```bash
+docker run -d --name shiftdesk-sql --platform linux/amd64 \
+  -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=ShiftDesk!Lab2026" -e "MSSQL_PID=Developer" \
+  -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+
+docker cp database.sql shiftdesk-sql:/tmp/database.sql
+docker exec shiftdesk-sql /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P 'ShiftDesk!Lab2026' -C -i /tmp/database.sql
+
+dotnet run --project ShiftDesk.Mac
+```
+
+`ShiftDesk.Mac/App.config` already carries that connection string. Everything
+else - the `connString` name, the `ConfigurationManager` lookup, the queries -
+is identical to the Windows build, because it is the same source file doing it.
+
 If you get *"Could not reach SQL Server"*, the `Data Source=` in `App.config`
 does not match your machine, or `database.sql` has not been run yet.
 
@@ -111,6 +152,7 @@ to the connection pool even if something throws halfway through.
 | `Program.cs` | Starts on `frmLogin`. The original started on the registration form. |
 | `App.config` | Holds the `connString` connection string. |
 | `database.sql` | **New.** Creates the database, the table and the test account. |
+| `ShiftDesk.Mac/` | **New.** The macOS front end. Links the two files above rather than copying them. |
 
 The project also needs the **System.Configuration** assembly reference, which
 is in `ShiftDesk.csproj`. Without it nothing compiles, and the error -
@@ -228,7 +270,7 @@ I stopped.
 ## How the code is organised
 
 ```
-ShiftDesk/
+ShiftDesk/                    Windows Forms build (.NET Framework 4.7.2)
   Data/UserStore.cs           all SQL, and the only read of App.config
   Security/PasswordHasher.cs  SHA-256
   UI/Theme.cs                 palette + focus indicator
@@ -237,6 +279,17 @@ ShiftDesk/
   frmDashboard.cs             behind the sign-in, with Log out
   Program.cs                  starts on frmLogin
   App.config                  the connection string
+
+ShiftDesk.Mac/                macOS build (Avalonia, .NET 10)
+  Views/LoginWindow.cs        sign-in window
+  Views/RegisterWindow.cs     registration window
+  Views/DashboardWindow.cs    behind the sign-in, with Log out
+  Skin.cs                     palette, type scale, spacing scale
+  App.cs                      control styling
+  Dialog.cs                   stands in for MessageBox
+  App.config                  the connection string
+  (Data/ and Security/ are linked from ../ShiftDesk, not copied)
+
 database.sql                  creates db_users, tbl_users, admin account
 ```
 
@@ -276,19 +329,28 @@ properly when that window is finally closed.
 
 ## Design
 
-The interface is deliberately a dark console rather than a light form: deep
-slate (`#111827`), a single amber accent (`#F59E0B`), Consolas for labels and
-the wordmark, Segoe UI for everything else. Flat square controls, no gradients.
+The macOS build is a light, typographic interface: warm off-white ground,
+near-black type and buttons, and one burnt-orange accent (`#C2410C`) used only
+for the brand mark, focus rings and links. No gradients, no decorative colour.
+One spacing scale drives every gap, which is what stops a hand-built layout
+looking hand-placed.
 
 Two things in it are not decoration:
 
-- **Focus is visible.** Each field sits on a flat surface with a rule
-  underneath, and that rule turns amber while the field has focus. A borderless
-  dark input with no focus indicator is unusable with a keyboard.
-- **Contrast was measured, not eyeballed.** Every text colour was checked
-  against the surface behind it and clears the WCAG AA minimum of 4.5:1 for
-  body text. The first pass did not - the hint text came out at 3.7:1 and the
-  footer at 2.3:1, and both were lightened until they passed.
+- **Focus is visible.** A focused field gets a 2px accent ring. This needed
+  work: Avalonia's Fluent theme ships its own control templates that repaint
+  the background on hover and focus, so setting a colour on the control does
+  nothing. The styles in `App.cs` reach into the template and replace the part
+  that actually paints.
+- **Contrast was measured, not eyeballed.** Every colour was checked against
+  the surface behind it. Body text clears the WCAG AA 4.5:1 minimum and control
+  boundaries clear the 3:1 minimum. That last one changed a decision: the
+  obvious input border, `#A8A29E`, measures 2.5:1 and fails, so the border is
+  `#948E88` at 3.2:1 instead.
+
+The Windows Forms build currently carries the earlier dark-console treatment
+(deep slate, amber accent). The two front ends therefore do not look alike yet -
+the data layer they share is identical, the styling is not.
 
 ---
 
