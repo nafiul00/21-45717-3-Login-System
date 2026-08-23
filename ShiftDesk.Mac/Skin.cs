@@ -41,7 +41,10 @@ namespace ShiftDesk.Mac
         internal static readonly IBrush Accent = New(194, 65, 12);     // #C2410C
         internal static readonly IBrush AccentDeep = New(154, 52, 18); // #9A3412
         internal static readonly IBrush AccentWash = New(255, 247, 237);// #FFF7ED
-        internal static readonly IBrush Danger = New(190, 24, 93);     // #BE185D
+        internal static readonly IBrush Danger = New(190, 24, 93);     // #BE185D  5.9:1 on white
+        internal static readonly IBrush DangerWash = New(255, 241, 242);// #FFF1F2
+        internal static readonly IBrush Success = New(21, 128, 61);    // #15803D  4.8:1 on white
+        internal static readonly IBrush SuccessWash = New(240, 253, 244);// #F0FDF4
 
         private static SolidColorBrush New(byte r, byte g, byte b)
         {
@@ -94,6 +97,48 @@ namespace ShiftDesk.Mac
                 VerticalAlignment = VerticalAlignment.Center
             });
             return row;
+        }
+
+        /// <summary>
+        /// A small status pill: a dot and a short line of text. Used on the
+        /// sign-in window to report whether SQL Server is reachable.
+        /// </summary>
+        internal static Border StatusPill(string text, IBrush ink, IBrush wash)
+        {
+            StackPanel row = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = S2,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            row.Children.Add(new Border
+            {
+                Background = ink,
+                Width = 7,
+                Height = 7,
+                CornerRadius = new CornerRadius(999),
+                VerticalAlignment = VerticalAlignment.Center
+            });
+
+            row.Children.Add(new TextBlock
+            {
+                Text = text,
+                FontFamily = new FontFamily(Mono),
+                FontSize = 11,
+                FontWeight = FontWeight.SemiBold,
+                Foreground = ink,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+
+            return new Border
+            {
+                Background = wash,
+                CornerRadius = new CornerRadius(999),
+                Padding = new Thickness(S3, 6, S3, 6),
+                VerticalAlignment = VerticalAlignment.Center,
+                Child = row
+            };
         }
 
         internal static TextBlock Heading(string text)

@@ -27,6 +27,33 @@ namespace ShiftDesk.Data
             ConfigurationManager.ConnectionStrings["connString"].ConnectionString;
 
         /// <summary>
+        /// Opens a connection, then closes it again, to answer one question up
+        /// front: can this machine reach the database at all?
+        ///
+        /// Without this the first sign of a bad connection string is a failed
+        /// sign-in, which looks exactly like a wrong password. The sign-in
+        /// screen calls this when it opens and says which it is.
+        ///
+        /// Returns null when the connection worked, or the reason it did not.
+        /// </summary>
+        internal static string DescribeConnectionProblem()
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(ConnectionString))
+                {
+                    connection.Open();
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
+        /// <summary>
         /// True when the username exists and its stored hash matches the hash
         /// of the supplied password. COUNT(*) comes back as a single number,
         /// which is why ExecuteScalar is the right call here.

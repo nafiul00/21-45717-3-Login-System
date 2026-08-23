@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using ShiftDesk.Data;
 
 namespace ShiftDesk.Mac.Views
@@ -21,6 +22,8 @@ namespace ShiftDesk.Mac.Views
         private readonly TextBox _username = Skin.Input();
         private readonly TextBox _password = Skin.Input();
         private readonly Button _reveal = Skin.QuietLink("Show");
+        private readonly Border _statusSlot = new Border { VerticalAlignment = VerticalAlignment.Center };
+        private string _connectionProblem;
 
         public LoginWindow()
         {
@@ -50,7 +53,11 @@ namespace ShiftDesk.Mac.Views
                 }
             };
 
-            Opened += (s, e) => _username.Focus();
+            Opened += (s, e) =>
+            {
+                _username.Focus();
+                CheckDatabase();
+            };
         }
 
         private Control BuildLayout()
@@ -60,7 +67,14 @@ namespace ShiftDesk.Mac.Views
                 Margin = new Thickness(Skin.S8, 44, Skin.S8, Skin.S7)
             };
 
-            page.Children.Add(Skin.Wordmark());
+            Grid top = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+            Control mark = Skin.Wordmark();
+            Grid.SetColumn(mark, 0);
+            top.Children.Add(mark);
+            Grid.SetColumn(_statusSlot, 1);
+            top.Children.Add(_statusSlot);
+            page.Children.Add(top);
+
             page.Children.Add(Skin.Gap(Skin.S7));
 
             page.Children.Add(Skin.Heading("Welcome back"));
@@ -147,10 +161,49 @@ namespace ShiftDesk.Mac.Views
             return page;
         }
 
+        /// <summary>
+        /// Asks the database whether it is reachable and shows the answer as a
+        /// pill next to the wordmark, so a connection problem is visible before
+        /// anyone types a password rather than looking like a wrong password.
+        ///
+        /// Runs off the UI thread - opening a TCP connection to a server that
+        /// is not there blocks until it times out, and doing that on the UI
+        /// thread would freeze the window for the whole timeout.
+        /// </summary>
+        private void CheckDatabase()
+        {
+            _statusSlot.Child = Skin.StatusPill("checking", Skin.Muted, Skin.Canvas);
+
+            Task.Run(() =>
+            {
+                string problem = UserStore.DescribeConnectionProblem();
+
+                Dispatcher.UIThread.Post(() =>
+                {
+                    _connectionProblem = problem;
+
+                    _statusSlot.Child = problem == null
+                        ? Skin.StatusPill("SQL Server", Skin.Success, Skin.SuccessWash)
+                        : Skin.StatusPill("no database", Skin.Danger, Skin.DangerWash);
+                });
+            });
+        }
+
         private async Task SignIn()
         {
             string username = (_username.Text ?? "").Trim();
             string password = _password.Text ?? "";
+
+            if (_connectionProblem != null)
+            {
+                await Dialog.Error(this, "No database",
+                    "The application cannot reach SQL Server, so nobody can sign in.\n\n" +
+                    _connectionProblem +
+                    "\n\nStart the server, run database.sql, then reopen this window.");
+
+                CheckDatabase();
+                return;
+            }
 
             if (username.Length == 0 || password.Length == 0)
             {

@@ -153,6 +153,7 @@ to the connection pool even if something throws halfway through.
 | `App.config` | Holds the `connString` connection string. |
 | `database.sql` | **New.** Creates the database, the table and the test account. |
 | `ShiftDesk.Mac/` | **New.** The macOS front end. Links the two files above rather than copying them. |
+| `Data/UserStore.cs` | Also carries `DescribeConnectionProblem()`, which the sign-in screen uses for the connection pill. |
 
 The project also needs the **System.Configuration** assembly reference, which
 is in `ShiftDesk.csproj`. Without it nothing compiles, and the error -
